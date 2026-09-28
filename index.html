@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Fox &amp; Floe</title>
+<meta name="description" content="Row the icy rapids. Dodge floes, scoop fish, beware the penguins.">
+<meta name="theme-color" content="#1b3548">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!--
+THESIS: The river is the whole screen; the interface is a few thin lines of type floating over it, in the manner of Alto's Odyssey. Refuses device frames, panels, chips and emoji.
+OWN-WORLD: Drawn monoline condensed type at a thin weight with wide tracking; ink that turns navy over bright skies and white at dusk and night, always with a soft halo; thin line icons; no containers.
+STORY: The player sees the fox rowing through the valley with the title floating in the sky, taps to row, reads distance and fish at a glance, and after a crash sees distance, score and best, then taps to row again.
+FIRST VIEWPORT: Full-bleed river at dawn; FOX & FLOE in thin spaced capitals in the upper sky with "row the icy rapids" beneath; "tap to row" breathing near the bottom above the best score; a thin sound icon in the corner.
+FORM: The category standard (canon), benchmarked on Alto's Odyssey, chosen by the user after rejecting the handheld; seed 9f973b64.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<main id="app" data-state="loading" data-input="touch" data-tone="dark">
+  <div id="screen" aria-label="The river"></div>
+  <div id="shade" aria-hidden="true"></div>
+
+  <header id="hud" aria-hidden="true">
+    <div class="hud-l">
+      <span class="stat"><i data-ico="fish"></i><span class="n" data-num="fish"></span></span>
+      <span class="mult"><span class="n" data-num="mult"></span><i class="meter m-chain"><b></b></i></span>
+      <span class="pow p-shield"><i data-ico="thermos"></i></span>
+      <span class="pow p-magnet"><i data-ico="goldfish"></i><i class="meter m-magnet"><b></b></i></span>
+    </div>
+    <div class="hud-c">
+      <div class="score-n"><span class="n" data-num="score"></span></div>
+      <div class="dist"><span class="n" data-num="dist"></span><span class="unit" data-print>m</span></div>
+      <div class="call" id="call"></div>
+      <p id="coach"><span class="t-touch" data-print>drag to steer · tap to row</span><span class="t-mouse" data-print>a / d to steer · hold space to row</span></p>
+    </div>
+    <div class="hud-r"></div>
+  </header>
+  <button class="corner ico-btn" id="btnPause" data-act="pause" aria-label="Pause"><i data-ico="pause"></i></button>
+  <button class="corner ico-btn" id="btnSound" data-act="sound" aria-label="Sound off"><i data-ico="sound"></i></button>
+
+  <section class="panel" id="p-loading">
+    <p class="tag" data-print>filling the river&hellip;</p>
+  </section>
+
+  <section class="panel" id="p-error">
+    <h1 class="logo" data-print>fox &amp; floe</h1>
+    <p class="tag err" id="errText" data-print>the river could not load</p>
+    <p class="tag" data-print>reload the page to try again</p>
+  </section>
+
+  <section class="panel" id="p-title">
+    <div class="head">
+      <h1 class="logo" data-print>fox &amp; floe</h1>
+      <p class="tag" data-print>row the icy rapids</p>
+    </div>
+    <div class="foot">
+      <p class="prompt t-touch" data-print>tap to row</p>
+      <p class="prompt t-mouse" data-print>press space to row</p>
+      <p class="meta" id="titleMeta"><span data-print>best score</span><span class="n" data-num="best"></span><span class="dot"></span><span data-print>rowed</span><span class="n" data-num="lifem"></span><span data-print>m</span></p>
+      <p class="keys t-mouse" data-print>hold to keep rowing · a / d to steer · p to pause · m for sound</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p-paused">
+    <p class="big" data-print>paused</p>
+    <div class="choices">
+      <button class="txt-btn" data-act="row" data-print>resume</button>
+      <button class="txt-btn" data-act="restart" data-print>restart</button>
+    </div>
+  </section>
+
+  <section class="panel" id="p-over">
+    <div class="head">
+      <div class="hero"><span class="n" data-num="rscore"></span><span class="unit" data-print>points</span></div>
+      <p class="meta"><span class="n" data-num="rdist"></span><span data-print>m</span><span class="dot"></span><span class="n" data-num="rfish"></span><span data-print>fish</span><span class="dot"></span><span class="n" data-num="rnear"></span><span data-print>close calls</span></p>
+      <p class="meta best-line"><span class="best-old"><span data-print>best</span><span class="n" data-num="rbest"></span></span><span class="best-new" data-print>new best</span></p>
+    </div>
+    <div class="foot">
+      <p class="prompt t-touch" data-print>tap to row again</p>
+      <p class="prompt t-mouse" data-print>press space to row again</p>
+    </div>
+  </section>
+
+  <div id="pops" aria-hidden="true"></div>
+  <p id="sr" class="vh" aria-live="polite"></p>
+</main>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module" src="./game.js"></script>
+</body>
+</html>

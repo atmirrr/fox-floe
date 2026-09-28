@@ -1,0 +1,171 @@
+/* Fox & Floe: the river is the screen; thin type floats over it. */
+:root {
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+/* ink follows the sky: navy over bright skies, white at dusk and night, always with a soft halo */
+#app[data-tone=dark] { --ink: #13283a; --halo: rgba(255, 255, 255, .6); --scrim: rgba(255, 255, 255, .16); --gold: #9a6a00; }
+#app[data-tone=light] { --ink: #ffffff; --halo: rgba(4, 16, 28, .6); --scrim: rgba(4, 16, 28, .24); --gold: #ffcc4d; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #1b3548; }
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; font: 12px/1.2 system-ui, sans-serif; }
+::selection { background: #ffb25c; color: #13283a; }
+canvas { display: block; }
+[hidden] { display: none !important; }
+button { font: inherit; }
+
+#app { position: fixed; inset: 0; overflow: hidden; color: var(--ink); transition: color .9s ease; }
+#screen { position: absolute; inset: 0; touch-action: none; cursor: pointer; }
+[data-state=play] #screen { cursor: ew-resize; }
+/* scrims: the top follows the tone; the bottom, under white prompts, always darkens; results get a
+   soft dark pool behind the numbers so they read over bright snow */
+#shade {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(180deg, var(--scrim) 0%, transparent 24%),
+    linear-gradient(0deg, rgba(4, 16, 28, .34) 0%, transparent 32%);
+  transition: background-color .6s ease;
+}
+[data-state=play] #shade, [data-state=crashing] #shade { background: linear-gradient(180deg, var(--scrim) 0%, transparent 24%); }
+[data-state=paused] #shade { background-color: rgba(4, 16, 28, .38); }
+[data-state=over] #shade {
+  background:
+    radial-gradient(90% 46% at 50% 20%, rgba(4, 16, 28, .5), transparent 72%),
+    linear-gradient(0deg, rgba(4, 16, 28, .42) 0%, transparent 32%);
+  background-color: rgba(4, 16, 28, .14);
+}
+/* over a dimmed scene the HUD and corner icon switch to white too */
+[data-state=paused] #hud, [data-state=paused] .corner, [data-state=over] .corner { color: #fff; --halo: rgba(4, 16, 28, .62); --gold: #ffcc4d; }
+/* text over the river or a dimmed scene is always white with a dark halo; only text over the sky follows the tone */
+.panel .foot, #p-over, #p-paused, #p-loading, #p-error { color: #fff; --halo: rgba(4, 16, 28, .62); --accent: #ffb25c; --gold: #ffcc4d; }
+
+/* drawn type and icons: strokes in the current ink */
+svg.pt, svg.ico { stroke: currentColor; fill: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 1.5; overflow: visible; }
+svg.pt { height: 1em; vertical-align: -0.214em; }
+svg.ico { width: 1em; height: 1em; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+[data-input=touch] .t-mouse, [data-input=mouse] .t-touch { display: none !important; }
+
+/* ---------------------------------------------------------------- HUD */
+#hud {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3; pointer-events: none;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: start;
+  padding: calc(env(safe-area-inset-top) + 18px) max(22px, env(safe-area-inset-right)) 0 max(22px, env(safe-area-inset-left));
+  opacity: 0; transform: translateY(-8px); transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+[data-state=play] #hud, [data-state=crashing] #hud, [data-state=paused] #hud { opacity: 1; transform: none; }
+/* the halo sits on each item, not on the full-width bar: a ticking score then repaints only its own box */
+.hud-l > *, .hud-c > * { filter: drop-shadow(0 0 6px var(--halo)); }
+.hud-l { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.stat { display: inline-flex; align-items: center; gap: 8px; font-size: 19px; letter-spacing: .06em; --pw: 1.3; }
+.stat svg.ico { font-size: 21px; }
+.mult { display: inline-flex; flex-direction: column; gap: 5px; font-size: 15px; letter-spacing: .1em; --pw: 1.4; opacity: 0; transition: opacity .3s; }
+.mult.on { opacity: 1; }
+.meter { display: block; width: 38px; height: 2px; background: color-mix(in srgb, currentColor 28%, transparent); }
+.meter b { display: block; height: 100%; background: currentColor; transform-origin: left center; transform: scaleX(var(--f, 0)); }
+.pow { display: none; align-items: center; gap: 7px; font-size: 19px; }
+.pow.on { display: inline-flex; }
+.p-magnet svg.ico { color: var(--gold); }
+.hud-c { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.score-n { font-size: clamp(36px, 9.5vw, 48px); letter-spacing: .03em; --pw: .8; line-height: 1; }
+.dist { display: flex; align-items: baseline; gap: .12em; font-size: 14px; letter-spacing: .1em; --pw: 1.35; line-height: 1; }
+.call { font-size: 13px; letter-spacing: .34em; text-transform: uppercase; --pw: 1.4; min-height: 1.2em; opacity: 0; transition: opacity .45s ease; }
+.call.on { opacity: 1; }
+/* first run: how to row, under the numbers, where no hazard passes */
+#coach { font-size: 13px; letter-spacing: .24em; --pw: 1.3; text-align: center; opacity: 0; transition: opacity .8s ease; }
+#coach.on { opacity: 1; }
+
+/* corner: pause while rowing, sound in menus */
+.corner { position: absolute; z-index: 6; top: calc(env(safe-area-inset-top) + 9px); right: max(10px, env(safe-area-inset-right)); }
+.ico-btn {
+  width: 48px; height: 48px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none;
+  color: var(--ink); font-size: 24px; cursor: pointer; filter: drop-shadow(0 0 6px var(--halo));
+  -webkit-tap-highlight-color: transparent; transition: transform .15s var(--ease), opacity .4s;
+}
+.ico-btn:active { transform: scale(.9); }
+.ico-btn:focus-visible, .txt-btn:focus-visible { outline: 1.5px solid currentColor; outline-offset: 3px; }
+#btnPause { display: none; }
+[data-state=play] #btnPause { display: grid; }
+[data-state=play] #btnSound, [data-state=crashing] #btnSound, [data-state=loading] #btnSound { display: none; }
+
+/* ---------------------------------------------------------------- panels */
+.panel {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: calc(env(safe-area-inset-top) + 13vh) 24px calc(env(safe-area-inset-bottom) + 7vh);
+  opacity: 0; visibility: hidden; transition: opacity .6s var(--ease), visibility 0s linear .6s;
+}
+.panel > * { filter: drop-shadow(0 0 7px var(--halo)); }
+/* white text low on the screen can land on bright ice: a tight dark edge under the soft halo */
+.panel .foot, #p-over .head { filter: drop-shadow(0 0 1.5px rgba(4, 16, 28, .5)) drop-shadow(0 0 7px var(--halo)); }
+[data-state=loading] #p-loading, [data-state=error] #p-error, [data-state=title] #p-title,
+[data-state=paused] #p-paused, [data-state=over] #p-over { opacity: 1; visibility: visible; transition: opacity .7s var(--ease); }
+.panel .head { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.panel .foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.logo { font-size: clamp(32px, 9.6vw, 70px); font-weight: inherit; line-height: 1; letter-spacing: .3em; text-transform: uppercase; --pw: .72; }
+/* the title writes itself in, stroke by stroke, left to right */
+#p-title .logo path { stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+[data-state=title] #p-title .logo path { animation: ink .8s var(--ease) calc(var(--i, 0) * 60ms + .2s) forwards; }
+@keyframes ink { to { stroke-dashoffset: 0; } }
+.tag { font-size: clamp(13px, 3.5vw, 16px); letter-spacing: .28em; --pw: 1.15; }
+.prompt { font-size: clamp(15px, 4.2vw, 19px); letter-spacing: .3em; --pw: 1.2; animation: breathe 2.8s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .8; } }
+.meta { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .55em .7em; font-size: 13px; letter-spacing: .24em; text-transform: uppercase; --pw: 1.45; }
+.meta .n { letter-spacing: .1em; --pw: 1.45; }
+.dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .75; }
+.keys { font-size: 13px; letter-spacing: .2em; --pw: 1.3; }
+#p-loading, #p-error { justify-content: center; gap: 20px; }
+#p-loading .tag { animation: breathe 2.2s ease-in-out infinite; }
+.err { color: var(--accent); --pw: 1.4; }
+
+#p-paused { justify-content: center; gap: 30px; }
+[data-state=paused] #p-paused { pointer-events: auto; }
+.big { font-size: clamp(24px, 6vw, 32px); letter-spacing: .42em; text-transform: uppercase; --pw: .9; }
+.choices { display: flex; gap: 22px; }
+.txt-btn {
+  position: relative; border: 0; background: none; color: inherit; cursor: pointer; padding: 14px 8px;
+  font-size: 14px; letter-spacing: .3em; text-transform: uppercase; --pw: 1.35; -webkit-tap-highlight-color: transparent;
+}
+.txt-btn::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: 8px; height: 1px; background: currentColor; opacity: .45; transform: scaleX(.35); transition: transform .35s var(--ease), opacity .35s; }
+.txt-btn:hover::after, .txt-btn:focus-visible::after { transform: scaleX(1); opacity: .9; }
+
+/* results: the distance leads; the rest arrives one line at a time */
+#p-over { padding-top: calc(env(safe-area-inset-top) + 11vh); }
+#p-over .head > * { opacity: 0; transform: translateY(10px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+[data-state=over] #p-over .head > * { opacity: 1; transform: none; }
+[data-state=over] #p-over .head > :nth-child(2) { transition-delay: .15s; }
+[data-state=over] #p-over .head > :nth-child(3) { transition-delay: .3s; }
+[data-state=over] #p-over .head > :nth-child(4) { transition-delay: .45s; }
+.hero { display: flex; align-items: baseline; gap: .14em; font-size: clamp(64px, 19vw, 118px); line-height: 1; --pw: .5; margin-bottom: 6px; }
+.hero .unit { font-size: max(13px, .17em); letter-spacing: .24em; text-transform: uppercase; --pw: 1.5; }
+.best-line .best-old { display: inline-flex; align-items: center; gap: .7em; }
+.best-line .best-new { display: none; letter-spacing: .36em; }
+#p-over.is-best .best-line .best-old { display: none; }
+#p-over.is-best .best-line .best-new { display: inline; }
+
+/* ---------------------------------------------------------------- moments */
+#pops { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+.pop {
+  position: absolute; transform: translate(-50%, calc(-50% - var(--lift, 0) * 1.5em)); white-space: nowrap;
+  transition: transform .25s var(--ease);
+  font-size: 17px; letter-spacing: .16em; --pw: 1.5; color: #fff;
+  filter: drop-shadow(0 0 5px rgba(4, 16, 28, .65));
+  animation: pop 1s var(--ease) forwards;
+}
+.pop.big { font-size: 22px; }
+@keyframes pop { 0% { opacity: 0; margin-top: 8px; } 14% { opacity: 1; } 100% { opacity: 0; margin-top: -44px; } }
+
+/* standard-density screens: no hairline under ~1.6 device pixels */
+@media (max-resolution: 1.49dppx) {
+  .meta, .meta .n, .keys, .call, #coach { --pw: 1.75; }
+  .dist, .mult, .txt-btn { --pw: 1.65; }
+  .tag, .prompt { --pw: 1.5; }
+  .stat svg.ico, .pow svg.ico { stroke-width: 1.9 !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt, #p-loading .tag { animation: none; }
+  #p-title .logo path { stroke-dashoffset: 0; animation: none !important; }
+  .pop { animation-duration: .01s; }
+  #hud, .panel, #p-over .head > * { transition-duration: .01s !important; transition-delay: 0s !important; }
+}

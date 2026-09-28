@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Fox &amp; Floe</title>
+<meta name="theme-color" content="#46c8d2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="icon" type="image/png" href="../icon-192.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #46c8d2; }
+  body { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-user-select: none; user-select: none; }
+  canvas { display: block; }
+  #ui { position: fixed; inset: 0; pointer-events: none; color: #274957; }
+
+  #hud { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 16px; opacity: 0; transition: opacity .3s; }
+  #hud.on { opacity: 1; }
+  .chip { background: rgba(255,251,238,.88); border-radius: 14px; padding: 7px 13px; font-weight: 800; font-size: 17px; box-shadow: 0 2px 0 rgba(39,73,87,.18); }
+  #dist { font-size: 34px; padding: 6px 20px 8px; line-height: 1; }
+  #dist small { font-size: 16px; font-weight: 800; opacity: .55; }
+
+  .panel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; transition: opacity .35s; }
+  .panel.hidden { opacity: 0; visibility: hidden; }
+  h1 { font-size: clamp(44px, 9vw, 84px); font-weight: 900; letter-spacing: 2px; color: #fffbee;
+       text-shadow: 0 3px 0 rgba(39,73,87,.45), 0 10px 30px rgba(23,60,70,.35); }
+  .tag { font-size: 18px; font-weight: 800; color: #fffbee; text-shadow: 0 2px 0 rgba(39,73,87,.35); }
+  .hint { margin-top: 26px; font-size: 16px; font-weight: 800; color: #fffbee; background: rgba(39,73,87,.42);
+          padding: 10px 18px; border-radius: 999px; animation: pulse 1.4s ease-in-out infinite; }
+  .keys { font-size: 14px; font-weight: 700; color: rgba(255,251,238,.92); text-shadow: 0 1px 0 rgba(39,73,87,.3); }
+  @keyframes pulse { 50% { transform: scale(1.06); opacity: .85; } }
+
+  #over .crunch { font-size: clamp(40px, 8vw, 68px); font-weight: 900; color: #fffbee;
+                  text-shadow: 0 3px 0 rgba(180,60,40,.7), 0 10px 30px rgba(23,60,70,.35); }
+  .score-card { background: rgba(255,251,238,.92); border-radius: 20px; padding: 16px 28px; font-weight: 800;
+                font-size: 18px; line-height: 1.75; box-shadow: 0 4px 0 rgba(39,73,87,.18); }
+  .score-card b { font-size: 30px; }
+  #newbest { color: #d9822b; font-weight: 900; display: none; }
+
+  #msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+         font-weight: 800; font-size: 18px; color: #fffbee; text-shadow: 0 2px 0 rgba(39,73,87,.4); }
+
+  #hudl { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  #power { display: none; }
+  #power.on { display: block; }
+  #pops { position: absolute; inset: 0; overflow: hidden; }
+  .pop { position: absolute; transform: translate(-50%,-50%); font-weight: 900; font-size: 20px;
+         color: #fffbee; text-shadow: 0 2px 0 rgba(39,73,87,.55); white-space: nowrap;
+         animation: popup .9s ease-out forwards; }
+  @keyframes popup { 0% { opacity: 0; margin-top: 8px; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -46px; } }
+  #toast { position: absolute; top: 17%; left: 0; right: 0; text-align: center;
+           font-size: clamp(26px, 6vw, 44px); font-weight: 900; color: #fffbee;
+           text-shadow: 0 3px 0 rgba(180,60,40,.65); opacity: 0; transition: opacity .25s; }
+  #toast.on { opacity: 1; }
+  #btns { position: absolute; top: 66px; right: 16px; display: flex; flex-direction: column;
+          gap: 8px; pointer-events: auto; }
+  #btns button { width: 42px; height: 42px; border-radius: 50%; border: 0; font-size: 19px;
+                 background: rgba(255,251,238,.88); box-shadow: 0 2px 0 rgba(39,73,87,.18); cursor: pointer; }
+  #coach { position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%); width: max-content;
+           text-align: center; font-weight: 800; font-size: 16px; color: #fffbee;
+           background: rgba(39,73,87,.45); padding: 10px 18px; border-radius: 999px;
+           opacity: 0; transition: opacity .4s; }
+  #coach.on { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="hud">
+    <div id="hudl">
+      <div class="chip" id="fishc">&#128031; 0</div>
+      <div class="chip" id="power"></div>
+    </div>
+    <div class="chip" id="dist">0<small> m</small></div>
+    <div class="chip" id="best">BEST 0</div>
+  </div>
+  <div id="pops"></div>
+  <div id="toast"></div>
+  <div id="coach">drag to steer &bull; tap to boost</div>
+  <div id="btns">
+    <button id="btnP" title="pause">&#9208;&#65039;</button>
+    <button id="btnM" title="mute">&#128266;</button>
+  </div>
+
+  <div id="title" class="panel hidden">
+    <h1>FOX &amp; FLOE</h1>
+    <div class="tag">row the icy rapids</div>
+    <div class="hint">press &uarr; or tap to row</div>
+    <div class="keys">steer: drag or A / D &bull; boost: tap, &uarr; or space &bull; M mute &bull; P pause</div>
+    <div class="keys">watch the penguins, they belly-flop at your boat!</div>
+  </div>
+
+  <div id="over" class="panel hidden">
+    <div class="crunch">CRUNCH!</div>
+    <div class="score-card">
+      <div id="newbest">NEW BEST!</div>
+      <div><b id="fscore">0</b> points</div>
+      <div id="fdetail">0 m &bull; 0 fish</div>
+      <div id="fbest">best 0</div>
+    </div>
+    <div class="hint">&uarr; or tap to row again</div>
+  </div>
+
+  <div id="msg">loading the river...</div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js" } }
+</script>
+<script type="module" src="./game.js"></script>
+</body>
+</html>

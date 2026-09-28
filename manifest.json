@@ -1,0 +1,23 @@
+{
+  "name": "Fox & Floe",
+  "short_name": "Fox & Floe",
+  "description": "Row the icy rapids. Dodge floes, scoop fish, beware the penguins.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1b3548",
+  "theme_color": "#1b3548",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

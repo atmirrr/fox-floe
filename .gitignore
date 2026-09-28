@@ -1,0 +1,5 @@
+.vercel
+.DS_Store
+.impeccable/
+*.orig
+*.blend[0-9]*

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fox-floe",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [".claude/devserver.py", "8317"],
+      "port": 8317
+    }
+  ]
+}
